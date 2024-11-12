@@ -1,68 +1,90 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 
-export default function UserDetails({selectedEmployeeId}) {
+export default function UserDetails({ selectedEmployeeId }) {
   const socket = useRef(null);
   const videoRef = useRef(null);
-  const [peerConnection, setPeerConnection] = useState(null);
+  const peerConnection = useRef(null);
   const remoteStream = useRef(new MediaStream());
- 
+
   const config = {
     iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
   };
 
+  const initializePeerConnection = () => {
+    if (peerConnection.current) {
+      peerConnection.current.close();
+    }
+
+    peerConnection.current = new RTCPeerConnection(config);
+
+    peerConnection.current.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.current.emit('ice-candidate', selectedEmployeeId, event.candidate);
+      }
+    };
+
+    peerConnection.current.ontrack = (event) => {
+      remoteStream.current.addTrack(event.track);
+      videoRef.current.srcObject = remoteStream.current;
+    };
+
+    remoteStream.current = new MediaStream();
+    videoRef.current.srcObject = remoteStream.current;
+  };
+
   useEffect(() => {
-    socket.current = io('http://192.168.6.28:4000'); // Adjust if needed
-    socket.current.emit('register-admin', 'admin');
+    if (socket.current) {
+      socket.current.disconnect();
+    }
+  
+    socket.current = io('http://192.168.6.28:4000');
+    socket.current.emit('register-admin', selectedEmployeeId);
+  
+    initializePeerConnection();
+  
     socket.current.on('offer', async (offer) => {
-      const pc = new RTCPeerConnection(config);
-      setPeerConnection(pc);
-  
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.current.emit('ice-candidate', selectedEmployeeId, event.candidate);
-        }
-      };
-  
-      pc.ontrack = (event) => {
-        // Add the received stream to the remote stream and display it
-        event.streams[0].getTracks().forEach((track) => remoteStream.current.addTrack(track));
-        videoRef.current.srcObject = remoteStream.current;
-        console.log('video',remoteStream.current)
-      };
-  
-      try {
-        await pc.setRemoteDescription(new RTCSessionDescription(offer)); // Set the offer
-        const answer = await pc.createAnswer(); // Create the answer
-        await pc.setLocalDescription(answer); // Set the answer locally
-        socket.current.emit('answer', selectedEmployeeId, answer); // Send answer to employee
-      } catch (error) {
-        console.error('Error handling offer:', error);
+      if (peerConnection.current) {
+        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await peerConnection.current.createAnswer();
+        await peerConnection.current.setLocalDescription(answer);
+        socket.current.emit('answer', selectedEmployeeId, answer);
       }
     });
   
     socket.current.on('ice-candidate', async (candidate) => {
-      if (peerConnection) {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+      if (candidate && peerConnection.current) {
+        await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
       }
     });
-
+  
+    socket.current.on('stream-paused', () => {
+      console.log('Stream paused');
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    });
+  
+    socket.current.on('stream-resumed', () => {
+      console.log('Stream resumed');
+      videoRef.current.srcObject = remoteStream.current;
+    });
+  
     return () => {
+      if (peerConnection.current) {
+        peerConnection.current.close();
+      }
       if (socket.current) {
         socket.current.disconnect();
       }
-      if (peerConnection) {
-        peerConnection.close();
-      }
     };
-  }, [peerConnection, selectedEmployeeId]);
-  
+  }, [selectedEmployeeId]);
   
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-      <h1>Admin - Live Video Stream-{selectedEmployeeId}</h1>
-      <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: '400px', border: '1px solid gray' }} />
+      <h1>{selectedEmployeeId}</h1>
+      <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: '400px' }} />
     </div>
   );
 }

@@ -1,0 +1,7 @@
+.employee-card:hover {
+    background: gray;
+  }
+  
+  .employee-card:hover .details-button {
+    display: block;
+  }
