@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 
 export default function UserDetails({ selectedEmployeeId }) {
@@ -33,12 +33,15 @@ export default function UserDetails({ selectedEmployeeId }) {
     videoRef.current.srcObject = remoteStream.current;
   };
 
+  const handleStreamSwitch = (type) => {
+    socket.current.emit('switch-stream', type);
+  };
+
   useEffect(() => {
     if (socket.current) {
       socket.current.disconnect();
     }
-  
-    socket.current = io('https://sp6xbxfq-4000.inc1.devtunnels.ms/');
+    socket.current = io('https://qx993sw3-4000.inc1.devtunnels.ms/' );
     socket.current.emit('register-admin', selectedEmployeeId);
   
     initializePeerConnection();
@@ -79,11 +82,12 @@ export default function UserDetails({ selectedEmployeeId }) {
       }
     };
   }, [selectedEmployeeId]);
-  
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
       <h1>{selectedEmployeeId}</h1>
+      <button onClick={() => handleStreamSwitch('screen')}>Switch to Screen</button>
+      <button onClick={() => handleStreamSwitch('webcam')}>Switch to Webcam</button>
       <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: '400px' }} />
     </div>
   );
