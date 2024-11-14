@@ -41,7 +41,7 @@ export default function UserDetails({ selectedEmployeeId }) {
     if (socket.current) {
       socket.current.disconnect();
     }
-    socket.current = io('https://qx993sw3-4000.inc1.devtunnels.ms/' );
+    socket.current = io('https://qx993sw3-5000.inc1.devtunnels.ms/' );
     socket.current.emit('register-admin', selectedEmployeeId);
   
     initializePeerConnection();
