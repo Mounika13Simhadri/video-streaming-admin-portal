@@ -8,7 +8,13 @@ export default function UserDetails({ selectedEmployeeId }) {
   const remoteStream = useRef(new MediaStream());
 
   const config = {
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+    iceServers: [
+      {
+        urls: "turn:asia.turn-server.net",
+        username: "allie@oopcode.com",
+        credential: "topsecretpassword",
+      },
+    ],
   };
 
   const initializePeerConnection = () => {
