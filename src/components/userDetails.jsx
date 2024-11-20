@@ -52,7 +52,7 @@ export default function UserDetails({ selectedEmployeeId }) {
 
     peerConnection.current.onicecandidate = (event) => {
       if (event.candidate) {
-        console.log('candidate',event.candidate)
+        console.log('candidate emit',event.candidate)
         socket.current.emit('ice-candidate', selectedEmployeeId, event.candidate);
       }
     };
@@ -75,29 +75,28 @@ export default function UserDetails({ selectedEmployeeId }) {
       socket.current.disconnect();
     }
     socket.current = io('https://qx993sw3-5000.inc1.devtunnels.ms/' );
-    socket.current.emit('register-admin', selectedEmployeeId);
+    socket.current.emit('admin', selectedEmployeeId);
   
     if (isConfigReady) {
       initializePeerConnection();
     }
 
-  
+   socket.current.on('employee',()=>{
+    socket.current.emit('admin', selectedEmployeeId);
+   })
     socket.current.on('offer', async (offer) => {
-      console.log("signalstate",peerConnection.current.signalingState )
-      if (peerConnection.current.signalingState !== 'stable') {
-        console.error('PeerConnection is not in a stable state');
-        return;
-      }
+      console.log("offer from employee",offer )
       if (peerConnection.current) {
         await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
         const answer = await peerConnection.current.createAnswer();
         await peerConnection.current.setLocalDescription(answer);
+        console.log("answer from admin", answer)
         socket.current.emit('answer', selectedEmployeeId, answer);
       }
     });
   
-    socket.current.on('ice-candidate', async (employeeId,candidate) => {
-      console.log("icecandidate",candidate)
+    socket.current.on('ice-candidate', async (id,candidate) => {
+      console.log("icecandidate on",candidate)
       if (candidate && peerConnection.current) {
         await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
       }
