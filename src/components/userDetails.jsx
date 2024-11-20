@@ -40,9 +40,9 @@ export default function UserDetails({ selectedEmployeeId }) {
       console.error('ICE server configuration not ready');
       return;
     }
-    if (peerConnection.current) {
-      peerConnection.current.close();
-    }
+    // if (peerConnection.current) {
+    //   peerConnection.current.close();
+    // }
     if (!rtcConfig) {
     console.error('ICE server configuration not ready');
     return;
