@@ -84,14 +84,14 @@ export default function UserDetails({ selectedEmployeeId }) {
    socket.current.on('employee',()=>{
     socket.current.emit('admin', selectedEmployeeId);
    })
-    socket.current.on('offer', async (offer) => {
+    socket.current.on('offer', async (id,offer) => {
       console.log("offer from employee",offer )
       if (peerConnection.current) {
         await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
         const answer = await peerConnection.current.createAnswer();
         await peerConnection.current.setLocalDescription(answer);
         console.log("answer from admin", answer)
-        socket.current.emit('answer', selectedEmployeeId, answer);
+        socket.current.emit('answer', id, answer);
       }
     });
   
