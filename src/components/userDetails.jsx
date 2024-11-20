@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 
 export default function UserDetails({ selectedEmployeeId }) {
@@ -6,17 +6,44 @@ export default function UserDetails({ selectedEmployeeId }) {
   const videoRef = useRef(null);
   const peerConnection = useRef(null);
   const remoteStream = useRef(new MediaStream());
+  const rtcConfig= useRef({ iceServers: [] });
 
-  const config = {
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-  };
+
+  useEffect(() => {
+    const fetchIceServers = async () => {
+      try {
+        const response  = await fetch(
+          'https://qx993sw3-5000.inc1.devtunnels.ms/ice-servers',
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+        const data = await response.json();
+        rtcConfig.current=({ iceServers: data.token.iceServers });
+      
+      } catch (error) {
+        console.error('Failed to fetch ICE servers:', error);
+      }
+    };
+
+    fetchIceServers();
+  }, []);
+  // const config = {
+  //   iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+  // };
 
   const initializePeerConnection = () => {
     if (peerConnection.current) {
       peerConnection.current.close();
     }
-
-    peerConnection.current = new RTCPeerConnection(config);
+ if (!rtcConfig) {
+    console.error('ICE server configuration not ready');
+    return;
+  }
+    peerConnection.current = new RTCPeerConnection(rtcConfig.current);
 
     peerConnection.current.onicecandidate = (event) => {
       if (event.candidate) {
@@ -47,6 +74,10 @@ export default function UserDetails({ selectedEmployeeId }) {
     initializePeerConnection();
   
     socket.current.on('offer', async (offer) => {
+      if (peerConnection.current.signalingState !== 'stable') {
+        console.error('PeerConnection is not in a stable state');
+        return;
+      }
       if (peerConnection.current) {
         await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
         const answer = await peerConnection.current.createAnswer();
