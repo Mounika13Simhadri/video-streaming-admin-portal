@@ -7,7 +7,7 @@ export default function UserDetails({ selectedEmployeeId }) {
   const peerConnection = useRef(null);
   const remoteStream = useRef(new MediaStream());
   const rtcConfig= useRef({ iceServers: [] });
-
+  const [isConfigReady, setIsConfigReady] = useState(false);
 
   useEffect(() => {
     const fetchIceServers = async () => {
@@ -23,7 +23,7 @@ export default function UserDetails({ selectedEmployeeId }) {
         );
         const data = await response.json();
         rtcConfig.current=({ iceServers: data.token.iceServers });
-      
+        setIsConfigReady(true)
       } catch (error) {
         console.error('Failed to fetch ICE servers:', error);
       }
@@ -36,13 +36,18 @@ export default function UserDetails({ selectedEmployeeId }) {
   // };
 
   const initializePeerConnection = () => {
+    if (!isConfigReady) {
+      console.error('ICE server configuration not ready');
+      return;
+    }
     if (peerConnection.current) {
       peerConnection.current.close();
     }
- if (!rtcConfig) {
+    if (!rtcConfig) {
     console.error('ICE server configuration not ready');
     return;
-  }
+    }
+    console.log("new",rtcConfig?.current)
     peerConnection.current = new RTCPeerConnection(rtcConfig.current);
 
     peerConnection.current.onicecandidate = (event) => {
@@ -71,7 +76,10 @@ export default function UserDetails({ selectedEmployeeId }) {
     socket.current = io('https://qx993sw3-5000.inc1.devtunnels.ms/' );
     socket.current.emit('register-admin', selectedEmployeeId);
   
-    initializePeerConnection();
+    if (isConfigReady) {
+      initializePeerConnection();
+    }
+
   
     socket.current.on('offer', async (offer) => {
       if (peerConnection.current.signalingState !== 'stable') {
@@ -112,7 +120,7 @@ export default function UserDetails({ selectedEmployeeId }) {
         socket.current.disconnect();
       }
     };
-  }, [selectedEmployeeId]);
+  }, [selectedEmployeeId,isConfigReady]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
