@@ -52,6 +52,7 @@ export default function UserDetails({ selectedEmployeeId }) {
 
     peerConnection.current.onicecandidate = (event) => {
       if (event.candidate) {
+        console.log('candidate',event.candidate)
         socket.current.emit('ice-candidate', selectedEmployeeId, event.candidate);
       }
     };
@@ -82,6 +83,7 @@ export default function UserDetails({ selectedEmployeeId }) {
 
   
     socket.current.on('offer', async (offer) => {
+      console.log("signalstate",peerConnection.current.signalingState )
       if (peerConnection.current.signalingState !== 'stable') {
         console.error('PeerConnection is not in a stable state');
         return;
@@ -95,6 +97,7 @@ export default function UserDetails({ selectedEmployeeId }) {
     });
   
     socket.current.on('ice-candidate', async (candidate) => {
+      console.log("icecandidate",candidate)
       if (candidate && peerConnection.current) {
         await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
       }
