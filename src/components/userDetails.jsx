@@ -22,7 +22,7 @@ export default function UserDetails({ selectedEmployeeId }) {
           },
         );
         const data = await response.json();
-        rtcConfig.current=({ iceServers: data.token });
+        rtcConfig.current=({ iceServers: data.token.iceServers });
         setIsConfigReady(true)
       } catch (error) {
         console.error('Failed to fetch ICE servers:', error);
