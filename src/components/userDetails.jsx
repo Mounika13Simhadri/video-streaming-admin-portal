@@ -96,7 +96,7 @@ export default function UserDetails({ selectedEmployeeId }) {
       }
     });
   
-    socket.current.on('ice-candidate', async (candidate) => {
+    socket.current.on('ice-candidate', async (employeeId,candidate) => {
       console.log("icecandidate",candidate)
       if (candidate && peerConnection.current) {
         await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
